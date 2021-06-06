@@ -15,4 +15,6 @@ username="Your MQTT username"
 host="MQTT hostname"
 ```
 
+You'll also need the library simpleaudio: `pip3 install simpleaudio`
+
 Then run the command `python3 bs-ligthshow-mqtt <path to the map folder>`

@@ -2,6 +2,7 @@
 #include <WiFiClientSecure.h>
 #include <MQTT.h>
 #include "creditentials.h"
+#include "LedsZones.h"
 
 #define NUM_LEDS 209
 #define NUM_ZONE 5
@@ -22,70 +23,7 @@
 #define ZONE (buf[0] & RECV_ZONE) >> 3
 #define SIGN(x) (x > 0) - (x < 0)
 
-class LedsZones
-{
-public:
-  void setZone(int led, byte zone)
-  {
-    m_zone[led] = zone;
-  }
-  void setTau(byte zone, float tau)
-  {
-    m_taus[zone] = tau;
-  }
-  void setColor(byte zone, CRGB *color)
-  {
-    m_color[zone] = color;
-  }
-  void setColorNoPointer(byte zone, CRGB color)
-  {
-    m_colorNoPointer[zone] = color;
-    m_color[zone] = &m_colorNoPointer[zone];
-  }
-  void setAnim(byte zone, byte anim)
-  {
-    m_anim[zone] = anim;
-  }
-
-  void wipeFlash()
-  {
-    for (int i = 0; i < NUM_ZONE; i++){
-      if (m_anim[i] == 2) setColorNoPointer(i, CRGB::Black);
-      m_anim[i] = false;
-    }
-  }
-
-  byte getZone(int led)
-  {
-    return m_zone[led];
-  }
-  float getTau(int led)
-  {
-    return getAnim(led) ? 0 : m_taus[getZone(led)];
-  }
-  byte getAnim(int led)
-  {
-    return m_anim[getZone(led)];
-  }
-  CRGB getColor(int led)
-  {
-    if (m_color[getZone(led)] == nullptr) setColorNoPointer(getZone(led), CRGB::Black);
-    return getAnim(led) ? *m_color[getZone(led)] : dim(*m_color[getZone(led)]);
-  }
-
-private:
-  byte  m_zone[NUM_LEDS];
-  float m_taus[NUM_ZONE];
-  byte  m_anim[NUM_ZONE];    // 0 = none, 1 = flash, 2 = flash + fade to black
-  CRGB *m_color[NUM_ZONE];
-  CRGB  m_colorNoPointer[NUM_ZONE];
-
-  CRGB dim(CRGB colortodim){   // Doing it with a function like this allows to copy the color object therfore not affecting the original color
-    return colortodim.nscale8(180);
-  }
-};
-
-LedsZones ledsZones;
+LedsZones ledsZones(NUM_ZONE, NUM_LEDS);
 CRGB leds[NUM_LEDS];
 bool leds_diff = false;
 unsigned long timerLedFilter = 0;
@@ -250,20 +188,20 @@ void loop()
 
     1st byte:
      Bitfield
-      +---------+-------------+----------------+----------------- +------------------+-----------------------------------+
-      | Bit     | 0 mode      | 1 behavior     | 2 change color ? | 3,4,5 change for | 6,7 color slot to change (case #) |
-      +---------+-------------+----------------+------------------+------------------+-----------------------------------+
-      |         | 0: Normal  \| 0: Uniform     |    Always true   | 0: Back Lasers   | 0: Color 1                        |
-      |         |            /| 1: LED by LED  >----------------->| 1: Ring Light    | 1: Color 2                        |
-      | Meaning |         ----+----------------+------------------+ 2: Left Lasers   |                                   |
-      |         | 1: BS mode \| 0: Out-game   \| 0: Change Color #| 3: Right Lasers  | 2: Color 1 bis                    |
-      |         |            /| 1: In-game    /| 1: Don't        >| 4: Center Light  | 3: Color 2 bis                    |
-      +---------+-------------+----------------+------------------+ 5: Color bis     +-----------------------------------+
+      +---------+-------------+----------------+----------------- +------------------+--------------------------------------+
+      | Bit     | 0 mode      | 1 behavior     | 2 change color ? | 3,4,5 change for | 6,7 Depends on bit 2                 |
+      +---------+-------------+----------------+------------------+------------------+--------------------------------------+
+      |         | 0: Normal  \| 0: Uniform     |    Always true   | 0: Back Lasers   | In case # slot: | Else (Chroma) :    |
+      |         |            /| 1: LED by LED  >----------------->| 1: Ring Light    | 0: Color 1      | 0: No Chroma event |
+      | Meaning |         ----+----------------+------------------+ 2: Left Lasers   | 1: Color 2      | 1: RGB             |
+      |         | 1: BS mode \| 0: Out-game   \| 0: Change Color #| 3: Right Lasers  | 2: Color 1 bis  | 2: Gradient        |
+      |         |            /| 1: In-game    /| 1: Don't        >| 4: Center Light  | 3: Color 2 bis  |                    |
+      +---------+-------------+----------------+------------------+ 5: Color bis     +--------------------------------------+
                                                                   +------------------+
     When we don't change color out-game, everything is disregarded but still must be present
     If it changes a color (0bXXXXXX0 or 0bXXXX011):
       2nd, 3rd and 4th bytes are R, G and B
-    Else:
+    Else if there isn't a chroma event:
       2nd byte is the value of the change (only available in BS mode):
         0: Turns the light group off.
         1: Changes the lights to 'color 1', and turns the lights on.
@@ -276,11 +214,26 @@ void loop()
        When the change group is Color bis:
         0: Uses main colors
         1: Uses secondary colors
+    Else (=chroma event):
+      RGB:
+        a
+      Gradient:
+        a
 */
 
-void bsMode(const char *buf, CRGB color)
+int bsMode(const char *buf)
 {
-  if (color){
+  int bytesRead = 0;
+  if (!(buf[0] & RECV_BEHAVIOR) != !inGame){
+    inGame = buf[0] & RECV_BEHAVIOR;
+    for (int i = 0; i < NUM_ZONE; i++){
+      ledsZones.setColor(i, inGame ? &CRGBBlack : i%2 ? &color1 : &color2);
+      ledsZones.setTau(i, inGame ? 1 : 3);
+    }
+  }
+
+  if (buf[0] & (0b11000101) == 1){ // If we're changing a color (out of chroma event)
+    CRGB color = colorParsing(buf+1);
     switch ((buf[0] & RECV_SLOT) >> 6)
     {
       case 0:
@@ -300,15 +253,8 @@ void bsMode(const char *buf, CRGB color)
         color2 = bisColor ? color2valuebis : color2value;
         break;
     }
+    bytesRead = 4;
   } else {
-    if (!(buf[0] & RECV_BEHAVIOR) != !inGame){
-      inGame = buf[0] & RECV_BEHAVIOR;
-      for (int i = 0; i < NUM_ZONE; i++){
-        ledsZones.setColor(i, inGame ? &CRGBBlack : i%2 ? &color1 : &color2);
-        ledsZones.setTau(i, inGame ? 1 : 3);
-      }
-    }
-
     if (inGame){
       if(ZONE == 5){
         bisColor = buf[1];
@@ -356,36 +302,46 @@ void bsMode(const char *buf, CRGB color)
         default:
           break;
         }
+        bytesRead = 2;
       }
     }
   }
+  return bytesRead;
+}
+
+CRGB colorParsing(const char* buf){
+  /**
+   * @brief parse color from buf
+   * 
+   * Buf needs to be the color with the 1st byte beeing the red value
+   * 
+   * @return color CRGB object beeing the color parsed
+   */
+  return CRGB(buf[0] << 16 | buf[1] << 8 | buf[3]);
 }
 
 int messageParsing(const char* buf)
 {
   sceneMode = buf[0] & RECV_MODE;
   leds_diff = true;
-  CRGB color = false;
-  if ((!(buf[0] & RECV_MODE)) || ((buf[0] & (0b00000101)) == 1))
-    color = buf[1] << 16 | buf[2] << 8 | buf[3];    // Color changing mode => parse color
 
   if (buf[0] & RECV_MODE)
-    bsMode(buf, color);
+    return bsMode(buf);
   else
-    normalMode(buf, color);
-  return color ? 4 : 2;   // Number of bytes read
+    return normalMode(buf);   // Number of bytes read
 }
 
-void normalMode(const char *buf, CRGB color)
+int normalMode(const char *buf)
 {
   if (buf[0] & 2)
   { // LED-by-LED
-    ledsZones.setColorNoPointer(ZONE, color);
+    ledsZones.setColorNoPointer(ZONE, colorParsing(buf+1));
   }
   else
   { // Uniform
-      for (int i = 0; i < NUM_ZONE; i++) ledsZones.setColorNoPointer(i, color);
+    for (int i = 0; i < NUM_ZONE; i++) ledsZones.setColorNoPointer(i, colorParsing(buf+1));
   }
+  return 4;
 }
 
 void messageReceived(MQTTClient *client, char topic[], char bytes[], int length)

@@ -1,7 +1,9 @@
 # BS-Lightshow
 
 This repository hosts code made to show a lightshow out of a beataber map. It currently works with ESP32 and MQTT.
+
 I plan to make it easily movable to other platforms (there isn't so much hope for AVR boards however, the framerate I get on leds isn't satisfying)
+
 I also would like to make a BS mode to show this while playing however I'm not used enough with mods/C# to do so, help would be highly appreciated.
 
 ## How to use
@@ -25,7 +27,7 @@ I also would like to make a BS mode to show this while playing however I'm not u
         2. In the for loop `Setting zones`, tweak the conditions to match your zone mapping
     3. *If your MQTT server doesn't use TLS*, change the port in `client.begin(host, 8883, net);` and replace the line `net.setCACert(letsEncyptCA);` with `net.setInsecure();`
     4. *If your MQTT server do use TLS but not with a Let's encrypt certificate*, change `const char letsEncyptCA[]` value to your AC's public key pam encoded.
-3. Create the file `creditentials.h` and fill it with :
+3. Create the file `creditentials.h` in the same directory as [MQTT-esp32.ino](MQTT-esp32/MQTT-esp32.ino) and fill it with :
 
     ```cpp
     const char *ssid = "Your WiFi SSID";
