@@ -34,7 +34,7 @@ I also would like to make a BS mode to show this while playing however I'm not u
     const char *pass = "Your verry secret WPA key";
     const char *host = "The host name of your MQTT server";
     const char *user = "Your MQTT username";
-    const char *mqttPass = "Duh look at the variable name's (it's your MQTT password, who guessed !)";
+    const char *mqttPass = "Duh look at the variable's name (it's your MQTT password, who guessed !)";
     ```
 
 4. Compile and send to your ESP32
