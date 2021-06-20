@@ -1,0 +1,3 @@
+[submodule "MQTT-esp32/easing"]
+	path = MQTT-esp32/easing
+	url = https://github.com/samgubernick/easing-functions

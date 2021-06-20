@@ -9,6 +9,12 @@ import creditentials
 path = sys.argv[1]
 print(path)
 
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code "+str(rc))
+
+def on_message(client, userdata, msg):
+    print(msg.topic+" "+str(msg.payload))
+
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
@@ -46,51 +52,50 @@ for i in range(len(track["_events"])):
             bufs.append(bytearray(0))
         thisbuf = bytearray(2)
         bufs[times.index(track["_events"][i]["_time"])].append(blankbuf + (int(track["_events"][i]["_type"]) << 3))
-        bufs[times.index(track["_events"][i]["_time"])].append(int(track["_events"][i]["_value"]))
+        bufs[times.index(track["_events"][i]["_time"])].append(min(int(track["_events"][i]["_value"]), 255))
 
 #buf = b"\x01\xFF\x00\x00\x01\x00\x00\xFF"   # Defaults colors This doesn't work
 buf = bytearray(0)
-buf.append(int(0b00000001))
-buf.append(int(255))
-buf.append(int(0))
-buf.append(int(0))
-buf.append(int(0b01000001))
-buf.append(int(0))
-buf.append(int(0))
-buf.append(int(255))
 if "_customData" in infos["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"][0]:
     customdata = infos["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"][0]["_customData"]
-    
-    if "_colorLeft" in customdata:
-        buf.append(int(0b00000001))
-        buf.append(min(int(customdata["_colorLeft"]['r'] * 255),    255))
-        buf.append(min(int(customdata["_colorLeft"]['g'] * 255),    255))
-        buf.append(min(int(customdata["_colorLeft"]['b'] * 255),    255))
-    if "_envColorLeft" in customdata:
+    if "_envColorLeft" in customdata and "_envColorRight" in customdata:
         buf.append(int(0b00000001))
         buf.append(min(int(customdata["_envColorLeft"]['r'] * 255), 255))
         buf.append(min(int(customdata["_envColorLeft"]['g'] * 255), 255))
         buf.append(min(int(customdata["_envColorLeft"]['b'] * 255), 255))
-    if "_colorRight" in customdata:
-        buf.append(int(0b01000001))
-        buf.append(min(int(customdata["_colorRight"]['r'] * 255),   255))
-        buf.append(min(int(customdata["_colorRight"]['g'] * 255),   255))
-        buf.append(min(int(customdata["_colorRight"]['b'] * 255),   255))
-    if "_envColorRight" in customdata:
         buf.append(int(0b01000001))
         buf.append(min(int(customdata["_envColorRight"]['r'] * 255),255))
         buf.append(min(int(customdata["_envColorRight"]['g'] * 255),255))
         buf.append(min(int(customdata["_envColorRight"]['b'] * 255),255))
+    else:
+        buf.append(int(0b00000001))
+        buf.append(int(255))
+        buf.append(int(0))
+        buf.append(int(0))
+        buf.append(int(0b01000001))
+        buf.append(int(0))
+        buf.append(int(0))
+        buf.append(int(255))
+else:     
+    buf.append(int(0b00000001))
+    buf.append(int(1))
+    buf.append(int(1))
+    buf.append(int(255))
+    buf.append(int(0b01000001))
+    buf.append(int(255))
+    buf.append(int(1))
+    buf.append(int(1))
         
 if len(buf) > 0:
+    print(buf)
     client.publish("/led", buf, qos=1)
-print(buf)
 
 try:
-    time.sleep(5)
+    time.sleep(3)
     #os.system("bash -c 'ffmpeg -n -i \"" + path.replace("\\", "/") + "/" + infos["_songFilename"] + "\" \"" + path.replace("\\", "/") + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav") + "\"'")
     os.system("ffmpeg -n -i \"" + path + "/" + infos["_songFilename"] + "\" \"" + path + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav") + "\"")
-    client.publish("/led", b"\x07\x03", qos=1)
+    client.publish("/led", b"\x07\x00", qos=1)
+    print(b"\x07\x03")
     time.sleep(3)
     os.chdir(path)
     wave_object = sa.WaveObject.from_wave_file(infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav"))
@@ -109,5 +114,6 @@ except KeyboardInterrupt:
     print("Skipping the rest of the sound")
 
 client.publish("/led", b"\x05\x00", qos=1)
+print(b"\x05\x00")
 time.sleep(3)
 client.disconnect()

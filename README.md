@@ -44,7 +44,8 @@ I also would like to make a BS mode to show this while playing however I'm not u
 ## TODO
 
 - [ ] Integrate Chroma events
-    - [ ] Remaster `LedsZones` to integrate easing functions
-    - [ ] Rethink the message object to allow passing/parsing chroma events
-- [ ] Try to make the normal behavior cleaner (maybe find an other way than the discreet 1st order filter by recurrence ?)
+    - [x] Remaster `LedsZones` to integrate easing functions
+    - [x] Rethink the message object to allow passing/parsing chroma events
+    - [ ] Make the parser
+- [x] Try to make the normal behavior cleaner (done using a custom ~~easing~~ function)
 - [ ] Clean up code
