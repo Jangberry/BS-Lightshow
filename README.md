@@ -4,7 +4,7 @@ This repository hosts code made to show a lightshow out of a beataber map. It cu
 
 I plan to make it easily movable to other platforms (there isn't so much hope for AVR boards however, the framerate I get on leds isn't satisfying)
 
-I also would like to make a BS mode to show this while playing however I'm not used enough with mods/C# to do so, help would be highly appreciated.
+I also would like to make a BS mode to show this while playing however I'm not used enough with mods/C# to do so for now, help would be highly appreciated.
 
 ## How to use
 
@@ -43,9 +43,12 @@ I also would like to make a BS mode to show this while playing however I'm not u
 
 ## TODO
 
-- [ ] Integrate Chroma events
+- [x] Integrate Chroma events
     - [x] Remaster `LedsZones` to integrate easing functions
     - [x] Rethink the message object to allow passing/parsing chroma events
-    - [ ] Make the parser
+    - [x] Make the parser
+- [ ] Improve the Chroma integration
+    - [ ] Find a way to deal with `_lightID`
 - [x] Try to make the normal behavior cleaner (done using a custom ~~easing~~ function)
 - [ ] Clean up code
+- [ ] Otpimize (some behavior are probably more complicated than needed)

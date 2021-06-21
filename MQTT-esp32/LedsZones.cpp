@@ -12,7 +12,7 @@ LedsZones::LedsZones(byte zones, int leds)
     m_easing = new byte[zones];
     m_durations = new float[zones];
     m_color = new CRGB[zones];
-    m_colorTarget = new CRGB [zones];
+    m_colorTarget = new CRGB[zones];
     m_colorOriginal = new CRGB[zones];
 }
 
@@ -59,15 +59,16 @@ CRGB LedsZones::getColor(int led)
 
 bool LedsZones::computeAnimations()
 {
-    // TODO Fix changes check
     bool changes = false;
     for (int i = 0; i < m_nbZones; i++)
     {
-        if (m_anim[i] && m_animEpoch[i] + m_durations[i] < millis()) {
-            if(m_anim[i] == 2) setColor(i, CRGB::Black);
+        changes |= m_anim[i];
+        if (m_anim[i] && m_animEpoch[i] + m_durations[i] < millis())
+        {
+            if (m_anim[i] == 2)
+                setColor(i, CRGB::Black);
             m_anim[i] = 0;
-        } else
-            changes = true;
+        }
 
         switch (m_anim[i])
         {
@@ -88,9 +89,9 @@ bool LedsZones::computeAnimations()
     return changes;
 }
 
-CRGB LedsZones::dim(CRGB colortodim)    // Dim a copy of the color to keep the original one unaltared
+CRGB LedsZones::dim(CRGB colortodim) // Dim a copy of the color to keep the original one unaltared
 {
-    return colortodim.nscale8(180);
+    return colortodim.nscale8(180); // Maybe usefull to compute it once then store...
 }
 
 CRGB LedsZones::easeColor(CRGB target, CRGB original, float spent, float duration, byte easeID)
@@ -193,23 +194,30 @@ CRGB LedsZones::easeColor(CRGB target, CRGB original, float spent, float duratio
         progress = easing::inOutBounce(normalizedTime);
         break;
     case 40:    // Flash then on
-        progress = exp(-7. * normalizedTime + 1.) - exp(-13. * normalizedTime) * (2.718281828 + 1.) + 1.;   // 0 to 1 with a nice exponential with overshoot
-        return CRGB( (uint8_t)((float)original.r * min(1.-progress, 0.) + (float)target.r * progress),
-                     (uint8_t)((float)original.g * min(1.-progress, 0.) + (float)target.g * progress),
-                     (uint8_t)((float)original.b * min(1.-progress, 0.) + (float)target.b * progress));
-                // Starts at the original color then uses only the target when progress > 1
+        progress = exp(-7. * normalizedTime + 1.) - exp(-13. * normalizedTime) * (2.718281828 + 1.) + 1.;
+                    // 0 to 1 with a nice exponential with overshoot
+
+        return CRGB((uint8_t)((float)target.r * min(1. - progress, 0.) + (float)target.r * progress),
+                    (uint8_t)((float)target.g * min(1. - progress, 0.) + (float)target.g * progress),
+                    (uint8_t)((float)target.b * min(1. - progress, 0.) + (float)target.b * progress));
+        // Starts at the ~~original~~ target color as if it was the original one then uses only the target when progress > 1
         break;
     case 41:    // Flash then black
-        progress = exp(-7. * normalizedTime + 1.) - exp(-33. * normalizedTime + 1.);    // Same as 40 except it ends at 0
-        return CRGB((uint8_t)(((float)original.r * min(1.-progress, 0.)) * (normalizedTime < 0.06) + (float)target.r * progress),
-                    (uint8_t)(((float)original.g * min(1.-progress, 0.)) * (normalizedTime < 0.06) + (float)target.g * progress),
-                    (uint8_t)(((float)original.b * min(1.-progress, 0.)) * (normalizedTime < 0.06) + (float)target.b * progress));
-                // As progress goes back under 1 we need to ignore the original color at some point
-                // "some point" is here the maximum of progress (that happen around 0.06)
-        break;  // is that even usefull ?
+        progress = exp(-7. * normalizedTime + 1.) - exp(-33. * normalizedTime + 1.);
+                    // Same as 40 except it ends at 0
+
+        return CRGB((uint8_t)(((float)target.r * min(1. - progress, 0.)) * (normalizedTime < 0.06) + (float)target.r * progress),
+                    (uint8_t)(((float)target.g * min(1. - progress, 0.)) * (normalizedTime < 0.06) + (float)target.g * progress),
+                    (uint8_t)(((float)target.b * min(1. - progress, 0.)) * (normalizedTime < 0.06) + (float)target.b * progress));
+        // As progress goes back under 1 we need to ignore the ""original""" color at some point
+        // "some point" is here the maximum of progress (that happen around 0.06)
+
+        break; // is that even usefull ?
+    // TODO: Optimize 40 and 41 (they seem too complicated for what they do) and/or find how it's really done in the game
     }
 
     return CRGB((uint8_t)(original.r + (target.r - original.r) * progress),
                 (uint8_t)(original.g + (target.g - original.g) * progress),
                 (uint8_t)(original.b + (target.b - original.b) * progress));
+                // Maybe it could be quicker if the slope was calculated only once (when affecting the colors) and stored in an array
 }

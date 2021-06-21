@@ -4,7 +4,9 @@ import time
 import simpleaudio as sa
 import sys
 import os
+import struct
 import creditentials
+import easingdict
 
 path = sys.argv[1]
 print(path)
@@ -51,8 +53,25 @@ for i in range(len(track["_events"])):
             times.append(track["_events"][i]["_time"])
             bufs.append(bytearray(0))
         thisbuf = bytearray(2)
-        bufs[times.index(track["_events"][i]["_time"])].append(blankbuf + (int(track["_events"][i]["_type"]) << 3))
-        bufs[times.index(track["_events"][i]["_time"])].append(min(int(track["_events"][i]["_value"]), 255))
+        thisbuf[0] += blankbuf + (int(track["_events"][i]["_type"]) << 3)
+        thisbuf[1] += min(int(track["_events"][i]["_value"]), 255)
+        if "_customData" in track["_events"][i]:
+            if "_color" in track["_events"][i]["_customData"]:
+                thisbuf[0] += 1 << 6
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_color"][0] * 255, 255)))
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_color"][1] * 255, 255)))
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_color"][2] * 255, 255)))
+            if "_lightGradient" in track["_events"][i]["_customData"]:
+                thisbuf[0] += 2 << 6
+                thisbuf.append(easingdict.easings[track["_events"][i]["_customData"]["_lightGradient"]["_easing"]])
+                thisbuf += struct.pack('f', track["_events"][i]["_customData"]["_lightGradient"]["_duration"] * 60 / bpm)
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_startColor"][0] * 255, 255)))
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_startColor"][1] * 255, 255)))
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_startColor"][2] * 255, 255)))
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_endColor"][0] * 255, 255)))
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_endColor"][1] * 255, 255)))
+                thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_endColor"][2] * 255, 255)))
+        bufs[times.index(track["_events"][i]["_time"])] += thisbuf
 
 #buf = b"\x01\xFF\x00\x00\x01\x00\x00\xFF"   # Defaults colors This doesn't work
 buf = bytearray(0)
@@ -91,12 +110,12 @@ if len(buf) > 0:
     client.publish("/led", buf, qos=1)
 
 try:
-    time.sleep(3)
+    time.sleep(5)
     #os.system("bash -c 'ffmpeg -n -i \"" + path.replace("\\", "/") + "/" + infos["_songFilename"] + "\" \"" + path.replace("\\", "/") + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav") + "\"'")
     os.system("ffmpeg -n -i \"" + path + "/" + infos["_songFilename"] + "\" \"" + path + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav") + "\"")
     client.publish("/led", b"\x07\x00", qos=1)
     print(b"\x07\x03")
-    time.sleep(3)
+    time.sleep(4)
     os.chdir(path)
     wave_object = sa.WaveObject.from_wave_file(infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav"))
     play_object = wave_object.play()
