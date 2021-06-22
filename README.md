@@ -52,3 +52,7 @@ I also would like to make a BS mode to show this while playing however I'm not u
 - [x] Try to make the normal behavior cleaner (done using a custom ~~easing~~ function)
 - [ ] Clean up code
 - [ ] Otpimize (some behavior are probably more complicated than needed)
+
+## What does it look like ?
+
+[Here is a playlist that expose the qualities and defaluts of this project](https://youtube.com/playlist?list=PLoi2AJY80Da4dWdUkFHWiMCIV_3WsXdXX)
