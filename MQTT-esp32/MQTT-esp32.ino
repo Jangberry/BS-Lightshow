@@ -97,9 +97,9 @@ void setup()
       ledsZones.setZone(i, 3); // Right Lasers
     else if (i > 83 && i <= 125)
       ledsZones.setZone(i, 4); // Center Light
-    else if ((i > 42 && i <= 83))
+    else if ((i > 42 && i <= 63) || (i > 125 && i <= 145))
       ledsZones.setZone(i, 1); // Ring Light
-    else if ((i > 125 && i <= 167))
+    else if ((i > 63 && i <= 83) || (i > 145 && i <= 167))
       ledsZones.setZone(i, 0); // Back Lasers
   }
 
@@ -131,8 +131,8 @@ void loop()
 
     FastLED.show(); // Apply
   }
-  else if (sceneMode && millis() - timerLastInfo > 300000)
-  { // 5 minutes after the last info, disable BS mode if still enabled
+  else if (sceneMode && millis() - timerLastInfo > 600000)
+  { // 10 minutes after the last info, disable BS mode if still enabled
     sceneMode = false;
   }
   else if (!(alimSwitchReal || alimSwitch) && !sceneMode)
@@ -295,7 +295,7 @@ int bsMode(const char *buf)
           break;
         case 3:
           color = color1;
-          duration.value = 2;
+          duration.value = 3;
           anim = 2;
           break;
         case 5:
@@ -310,7 +310,7 @@ int bsMode(const char *buf)
           break;
         case 7:
           color = color2;
-          duration.value = 2;
+          duration.value = 3;
           anim = 2;
           break;
         }
@@ -320,6 +320,12 @@ int bsMode(const char *buf)
         { // Both color and animation specifications here are using an other overload than vanilla + rgb
           ledsZones.setColor(ZONE, colorParsing(buf + 7), colorParsing(buf + 10));
           memcpy(duration.raw, buf + 3, 4);
+          /*
+          duration.raw[0] = buf[4];
+          duration.raw[1] = buf[5];
+          duration.raw[2] = buf[6];
+          duration.raw[3] = buf[7];
+          */
           ledsZones.setAnim(ZONE, 3, buf[2]);
           bytesRead = 13;
         }

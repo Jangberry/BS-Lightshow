@@ -104,123 +104,120 @@ CRGB LedsZones::easeColor(CRGB target, CRGB original, float spent, float duratio
         progress = normalizedTime;
         break;
     case 1:
-        progress = floor(normalizedTime);
-        break;
-    case 2:
         progress = easing::inSine(normalizedTime);
         break;
-    case 3:
+    case 2:
         progress = easing::outSine(normalizedTime);
         break;
-    case 4:
+    case 3:
         progress = easing::inOutSine(normalizedTime);
         break;
-    case 5:
+    case 4:
         progress = easing::inCubic(normalizedTime);
         break;
-    case 6:
+    case 5:
         progress = easing::outCubic(normalizedTime);
         break;
-    case 7:
+    case 6:
         progress = easing::inOutCubic(normalizedTime);
         break;
-    case 8:
+    case 7:
         progress = easing::inQuint(normalizedTime);
         break;
-    case 9:
+    case 8:
         progress = easing::outQuint(normalizedTime);
         break;
-    case 10:
+    case 9:
         progress = easing::inOutQuint(normalizedTime);
         break;
-    case 11:
+    case 10:
         progress = easing::inCirc(normalizedTime);
         break;
-    case 12:
+    case 11:
         progress = easing::outCirc(normalizedTime);
         break;
-    case 13:
+    case 12:
         progress = easing::inOutCirc(normalizedTime);
         break;
-    case 14:
+    case 13:
         progress = easing::inElastic(normalizedTime);
         break;
-    case 15:
+    case 14:
         progress = easing::outElastic(normalizedTime);
         break;
-    case 16:
+    case 15:
         progress = easing::inOutElastic(normalizedTime);
         break;
-    case 17:
+    case 16:
         progress = easing::inQuad(normalizedTime);
         break;
-    case 18:
+    case 17:
         progress = easing::outQuad(normalizedTime);
         break;
-    case 19:
+    case 18:
         progress = easing::inOutQuad(normalizedTime);
         break;
-    case 20:
+    case 19:
         progress = easing::inQuart(normalizedTime);
         break;
-    case 21:
+    case 20:
         progress = easing::outQuart(normalizedTime);
         break;
-    case 22:
+    case 21:
         progress = easing::inOutQuart(normalizedTime);
         break;
-    case 23:
+    case 22:
         progress = easing::inExpo(normalizedTime);
         break;
-    case 24:
+    case 23:
         progress = easing::outExpo(normalizedTime);
         break;
-    case 25:
+    case 24:
         progress = easing::inOutExpo(normalizedTime);
         break;
-    case 26:
+    case 25:
         progress = easing::inBack(normalizedTime);
         break;
-    case 27:
+    case 26:
         progress = easing::outBack(normalizedTime);
         break;
-    case 28:
+    case 27:
         progress = easing::inOutBack(normalizedTime);
         break;
-    case 29:
+    case 28:
         progress = easing::inBounce(normalizedTime);
         break;
-    case 30:
+    case 29:
         progress = easing::outBounce(normalizedTime);
         break;
-    case 31:
+    case 30:
         progress = easing::inOutBounce(normalizedTime);
         break;
     case 40:    // Flash then on
-        progress        = normalizedTime < 0.2  ? 1. + 2. * normalizedTime  : 1. + 0.65 * (normalizedTime - 1) * (normalizedTime - 1);
-                // Simplier model than previous commit.
-                // Start from 1, overshoot to (linear) 1.41 (to overcome the dim()), then goes back to (square) 1 
+        progress = exp(-7. * normalizedTime + 1.) - exp(-13. * normalizedTime) * (2.718281828 + 1.) + 1.;
+                    // 0 to 1 with a nice exponential with overshoot
 
-        return CRGB((uint8_t)(target.r * progress),
-                    (uint8_t)(target.g * progress),
-                    (uint8_t)(target.b * progress));
+        return CRGB((uint8_t)((float)target.r * min(1. - progress, 0.) + (float)target.r * progress),
+                    (uint8_t)((float)target.g * min(1. - progress, 0.) + (float)target.g * progress),
+                    (uint8_t)((float)target.b * min(1. - progress, 0.) + (float)target.b * progress));
+        // Starts at the ~~original~~ target color as if it was the original one then uses only the target when progress > 1
         break;
     case 41:    // Flash then black
-        // As this animation is longer than 40 BUT the flash is approximatelly as long, time distortion is needed:
-        normalizedTime  = normalizedTime < 0.17 ? normalizedTime * 2.       : normalizedTime * 0.8 + 0.2;
-        progress        = normalizedTime < 0.2  ? 1. + 2 * normalizedTime   : 2.21 * (normalizedTime - 1) * (normalizedTime - 1);
+        progress = exp(-7. * normalizedTime + 1.) - exp(-33. * normalizedTime + 1.);
                     // Same as 40 except it ends at 0
 
-        return CRGB((uint8_t)(target.r * progress),
-                    (uint8_t)(target.g * progress),
-                    (uint8_t)(target.b * progress));
+        return CRGB((uint8_t)(((float)target.r * min(1. - progress, 0.)) * (normalizedTime < 0.06) + (float)target.r * progress),
+                    (uint8_t)(((float)target.g * min(1. - progress, 0.)) * (normalizedTime < 0.06) + (float)target.g * progress),
+                    (uint8_t)(((float)target.b * min(1. - progress, 0.)) * (normalizedTime < 0.06) + (float)target.b * progress));
+        // As progress goes back under 1 we need to ignore the ""original""" color at some point
+        // "some point" is here the maximum of progress (that happen around 0.06)
 
         break; // is that even usefull ?
-    // TODO: Find ind how 40 and 41 are really done in the game
+    // TODO: Optimize 40 and 41 (they seem too complicated for what they do) and/or find how it's really done in the game
     }
 
-    return CRGB((uint8_t)(original.r + (target.r - original.r) * progress), // Imitate the LerpUnclamped function from Unity
+    return CRGB((uint8_t)(original.r + (target.r - original.r) * progress),
                 (uint8_t)(original.g + (target.g - original.g) * progress),
                 (uint8_t)(original.b + (target.b - original.b) * progress));
-                // Maybe it could be quicker if the slope (target.r - original.r) was calculated only once (when affecting the colors) and stored in an array
+                // Maybe it could be quicker if the slope was calculated only once (when affecting the colors) and stored in an array
 }
