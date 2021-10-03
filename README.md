@@ -4,7 +4,7 @@ This repository hosts code made to show a lightshow out of a beataber map. It cu
 
 I plan to make it easily movable to other platforms (there isn't so much hope for AVR boards however, the framerate I get on leds isn't satisfying)
 
-I also would like to make a BS mode to show this while playing however I'm not used enough with mods/C# to do so for now, help would be highly appreciated.
+A mod to control all this mess can be found [here.](https://github.com/Jangberry/BS-Lightshow-mod)
 
 ## How to use
 
@@ -39,7 +39,7 @@ I also would like to make a BS mode to show this while playing however I'm not u
 
 4. Compile and send to your ESP32
 
-5. Enjoy (For now the only way is through [theses scripts](Maestro/))
+5. Enjoy (Either through [theses scripts](Maestro/) or by installing [this mod](https://github.com/Jangberry/BS-Lightshow-mod))
 
 ## TODO
 
@@ -52,3 +52,7 @@ I also would like to make a BS mode to show this while playing however I'm not u
 - [x] Try to make the normal behavior cleaner (done using a custom ~~easing~~ function)
 - [ ] Clean up code
 - [ ] Otpimize (some behavior are probably more complicated than needed)
+
+## What does it look like ?
+
+[Here is a playlist that expose the qualities and defaluts of this project](https://youtube.com/playlist?list=PLoi2AJY80Da4dWdUkFHWiMCIV_3WsXdXX)
