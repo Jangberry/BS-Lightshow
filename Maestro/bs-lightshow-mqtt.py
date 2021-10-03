@@ -25,7 +25,7 @@ client.username_pw_set(creditentials.username, password=creditentials.password)
 
 client.connect(creditentials.host, 8883, 60)
 
-#info = open(path + "\\Info.dat")
+
 try:
     info = open(path + "/Info.dat")
 except FileNotFoundError:
@@ -64,7 +64,7 @@ for i in range(len(track["_events"])):
             if "_lightGradient" in track["_events"][i]["_customData"]:
                 thisbuf[0] += 2 << 6
                 thisbuf.append(easingdict.easings[track["_events"][i]["_customData"]["_lightGradient"]["_easing"]])
-                thisbuf += struct.pack('f', track["_events"][i]["_customData"]["_lightGradient"]["_duration"] * 60 / bpm)
+                thisbuf += struct.pack('f', track["_events"][i]["_customData"]["_lightGradient"]["_duration"])# * 60 / bpm) This factor isn't used in the mod and it seems to be more correct...
                 thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_startColor"][0] * 255, 255)))
                 thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_startColor"][1] * 255, 255)))
                 thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_startColor"][2] * 255, 255)))
@@ -73,7 +73,6 @@ for i in range(len(track["_events"])):
                 thisbuf.append(int(min(track["_events"][i]["_customData"]["_lightGradient"]["_endColor"][2] * 255, 255)))
         bufs[times.index(track["_events"][i]["_time"])] += thisbuf
 
-#buf = b"\x01\xFF\x00\x00\x01\x00\x00\xFF"   # Defaults colors This doesn't work
 buf = bytearray(0)
 if "_customData" in infos["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"][0]:
     customdata = infos["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"][0]["_customData"]
@@ -110,14 +109,15 @@ if len(buf) > 0:
     client.publish("/led", buf, qos=1)
 
 try:
-    time.sleep(5)
-    #os.system("bash -c 'ffmpeg -n -i \"" + path.replace("\\", "/") + "/" + infos["_songFilename"] + "\" \"" + path.replace("\\", "/") + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav") + "\"'")
-    os.system("ffmpeg -n -i \"" + path + "/" + infos["_songFilename"] + "\" \"" + path + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav") + "\"")
+    time.sleep(10)
+    if os.name == "nt":
+        os.system("bash -c 'ffmpeg -n -i \"" + path + "/" + infos["_songFilename"] + "\" \"" + path + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav") + "\"'")
+    else:
+        os.system("ffmpeg -n -i \"" + path + "/" + infos["_songFilename"] + "\" \"" + path + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav") + "\"")
     client.publish("/led", b"\x07\x00", qos=1)
     print(b"\x07\x03")
     time.sleep(4)
-    os.chdir(path)
-    wave_object = sa.WaveObject.from_wave_file(infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav"))
+    wave_object = sa.WaveObject.from_wave_file(path + "/" + infos["_songFilename"].replace(".egg", ".wav").replace(".ogg", ".wav"))
     play_object = wave_object.play()
     start = time.monotonic()
 
