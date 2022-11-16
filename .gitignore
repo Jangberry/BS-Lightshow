@@ -1,3 +1,8 @@
 .vscode
 MQTT-esp32/creditentials.h
 Easing playground
+usb-stm32/bin
+Maestro/Music
+Maestro/Beat Saber_Data
+Maestro/__pycache__
+Decoder/__pycache__
