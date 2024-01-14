@@ -1,0 +1,5 @@
+build/
+*.o
+out.bin
+song.wav
+config.json

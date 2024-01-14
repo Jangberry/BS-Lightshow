@@ -167,7 +167,7 @@ bool LedsZones::computeAnimations()
 }
 bool LedsZones::computeAnimations(u_int16_t i, unsigned long now)
 {
-    if(m_color[i] == dim(m_colorTarget[i])){return false}
+    if(m_color[i] == dim(m_colorTarget[i])){return false;}
 
     if (m_anim[i] && (m_durations[i] < now - m_animEpoch[i]))
     {

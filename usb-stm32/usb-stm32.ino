@@ -83,7 +83,7 @@ void setup()
   {
     ledsZones.setColor(i, CRGB::Black, CRGB::White);
     ledsZones.setAnim(i, 3, 4);
-    ledsZones.setDuration(i, 1);
+    ledsZones.setDuration(i, i+1);
   }
 }
 
